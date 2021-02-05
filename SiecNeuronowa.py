@@ -62,8 +62,7 @@ class SiecNeuronowa:
         bledyWyjsciowe = self.obliczajBledyOstatniejWarstwy(wartosciWyjsciowe, przypadekUczenia[1])
         # print(bledyWyjsciowe)
 
-        sumaBledow = self.funkcjaKosztu(bledyWyjsciowe)
-        print(sumaBledow)
+        # sumaBledow = self.funkcjaKosztu(bledyWyjsciowe)
 
         bledyUkryte = self.obliczajBledyUkrytejWarstwy(bledyWyjsciowe)
         # print(bledyUkryte)
@@ -73,7 +72,9 @@ class SiecNeuronowa:
         for i in range(len(self.__warstwaUkryta)):
             for j in range(len(przypadekUczenia[0])):
                 waga = self.__warstwaUkryta[i].getWaga(j)
-                nowa_waga = waga - (self.__alfa * (self.sigmoid_derivative(przypadekUczenia[0][j]) * bledyUkryte[i]))
+                # dw = x * dz
+                # dz = a - y
+                nowa_waga = waga + (self.__alfa * (przypadekUczenia[0][j] * bledyUkryte[i]))
                 self.__warstwaUkryta[i].setWaga(j, nowa_waga)
 
 
@@ -81,7 +82,9 @@ class SiecNeuronowa:
         for i in range(len(self.__warstwaWyjsciowa)):
             for j in range(len(self.__warstwaUkryta)):
                 waga = self.__warstwaWyjsciowa[i].getWaga(j)
-                nowa_waga = waga - (self.__alfa * (self.sigmoid_derivative(wartosciUkryte[j]) * bledyWyjsciowe[i]))
+                # dw = x * dz
+                # dz = a - y
+                nowa_waga = waga + (self.__alfa * (wartosciUkryte[j] * bledyWyjsciowe[i]))
                 self.__warstwaWyjsciowa[i].setWaga(j, nowa_waga)
 
 
@@ -97,16 +100,16 @@ class SiecNeuronowa:
         return bledyWarstwyUkrytej
 
     def test(self, wejscie):
-        # liczymy X -> Z
-        pass
+        # wartosci obliczen neuronow ukrytych 1 neuron, 1 wyjscie
+        wartosciUkryte = [self.sigmoid(x.sumuj(wejscie)) for x in self.__warstwaUkryta]
+        # print(wartosciUkryte)
+        # wartosci obliczen neuronow wyjsciowych 1 neuron, 1 wyjscie
+        wartosciWyjsciowe = [self.sigmoid(x.sumuj(wartosciUkryte)) for x in self.__warstwaWyjsciowa]
+        return wartosciWyjsciowe
 
     # Funkcja aktywacyjna - funkcja Sigmoid
     def sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
-
-    # Pochodna Sigmoid
-    def sigmoid_derivative(self, x):
-        return x * (1 - x)
 
     def funkcjaKosztu(self, bledy):
         suma = 0
