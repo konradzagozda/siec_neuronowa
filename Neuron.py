@@ -7,7 +7,7 @@ class Neuron:
 
 
     def __init__(self, ileWejsc: int):
-        self.__wagi = np.random.uniform(-0.009, 0.009, ileWejsc);
+        self.__wagi = np.random.uniform(-0.09, 0.09, ileWejsc);
 
 
     def getWagi(self):

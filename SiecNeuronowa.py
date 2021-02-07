@@ -63,7 +63,7 @@ class SiecNeuronowa:
         bledyWyjsciowe = self.obliczajBledyOstatniejWarstwy(wartosciWyjsciowe, przypadekUczenia[1])
         # print("bledy na wyjsciu: ", [round(x,3) for x in bledyWyjsciowe])
         koszt_wyjscia = self.funkcjaKosztu(bledyWyjsciowe)
-        print("koszt wyjscia: ", koszt_wyjscia)
+        # print("koszt wyjscia: ", koszt_wyjscia)
 
         bledyUkryte = self.obliczajBledyUkrytejWarstwy(bledyWyjsciowe)
         # print("bledy ukryte: ", [round(x,4) for x in bledyUkryte])
@@ -75,9 +75,18 @@ class SiecNeuronowa:
         for i in range(len(self.__warstwaUkryta)):
             for j in range(len(przypadekUczenia[0])):
                 waga = self.__warstwaUkryta[i].getWaga(j)
-                # dw = x * dz
-                # dz = a - y
-                nowa_waga = waga - (self.__alfa * (przypadekUczenia[0][j] * bledyUkryte[i]))
+                x = przypadekUczenia[0][j]
+                d = bledyUkryte[i]
+                a = wartosciUkryte[i]
+                # dc/dd = 2d
+                pochodna = 2 * d
+                # dd/dy = 1
+                # dy/da = sigmoid(a) * (1 - sigmoid(a))
+                pochodna = (self.sigmoid(a) * (1 - self.sigmoid(a))) * pochodna
+                # da/dw = x
+                pochodna = pochodna * x
+                # pochodna = dc/dw
+                nowa_waga = waga - (self.__alfa * pochodna)
                 self.__warstwaUkryta[i].setWaga(j, nowa_waga)
 
 
@@ -85,9 +94,18 @@ class SiecNeuronowa:
         for i in range(len(self.__warstwaWyjsciowa)):
             for j in range(len(self.__warstwaUkryta)):
                 waga = self.__warstwaWyjsciowa[i].getWaga(j)
-                # dw = x * dz
-                # dz = a - y
-                nowa_waga = waga - (self.__alfa * (wartosciUkryte[j] * bledyWyjsciowe[i]))
+                x = wartosciUkryte[j]
+                d = bledyWyjsciowe[i]
+                a = wartosciWyjsciowe[i]
+                # pochodna dc/dd = 2d
+                pochodna = 2 * d
+                # pochodna dd/dy = 1
+                # pochodna dy/da = sigmoid(a) * (1 - sigmoid(a))
+                pochodna = (self.sigmoid(a) * (1 - self.sigmoid(a))) * pochodna
+                # pochodna da/dw = x
+                pochodna = pochodna * x
+                # pochodna = dc/dw
+                nowa_waga = waga - (self.__alfa * pochodna)
                 self.__warstwaWyjsciowa[i].setWaga(j, nowa_waga)
 
 
@@ -96,10 +114,12 @@ class SiecNeuronowa:
         return [wyjscieObliczone[i] - wyjscieZnane[i] for i in range(len(wyjscieObliczone))]
 
     def obliczajBledyUkrytejWarstwy(self, bledyWarstwyOstatniej):
-        bledyWarstwyUkrytej = [0] * len(self.__warstwaUkryta)
-        for i in range(len(bledyWarstwyOstatniej)):
-            for j in range(len(self.__warstwaUkryta)):
-                bledyWarstwyUkrytej[j] += self.__warstwaWyjsciowa[i].getWaga(j) * bledyWarstwyOstatniej[i]
+        bledyWarstwyUkrytej = [0] * len(self.__warstwaUkryta) # tyle bledow ile neuronow ukrytych
+
+        for i in range(len(self.__warstwaUkryta)):  # dla kazdego neuronu ukrytego
+            for j in range(len(bledyWarstwyOstatniej)):  # zrob cos z bledem warstwy ostatniej
+                bledyWarstwyUkrytej[i] += bledyWarstwyOstatniej[j] * self.__warstwaWyjsciowa[j].getWaga(i)
+
         return bledyWarstwyUkrytej
 
     def test(self, wejscie):
