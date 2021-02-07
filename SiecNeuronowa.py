@@ -9,16 +9,17 @@ from Neuron import Neuron
 
 class SiecNeuronowa:
 
-    def __init__(self, alfa: float, ileWejsc: int, ileNeuronowUkrytych: int, ileNeuronowWyjsciowych: int):
+    def __init__(self, alfa: float, ileWejsc: int, ileNeuronowUkrytych: int, ileNeuronowWyjsciowych: int, bias: bool):
+        self.__bias = bias
         self.__alfa = alfa
-        self.__warstwaUkryta = [Neuron(ileWejsc) for _ in range(ileNeuronowUkrytych)]
-        self.__warstwaWyjsciowa = [Neuron(ileNeuronowUkrytych) for _ in range(ileNeuronowWyjsciowych)]
+        self.warstwaUkryta = [Neuron(ileWejsc, bias) for _ in range(ileNeuronowUkrytych)]
+        self.warstwaWyjsciowa = [Neuron(ileNeuronowUkrytych, bias) for _ in range(ileNeuronowWyjsciowych)]
 
     def getNeuronyUkryte(self):
-        return self.__warstwaUkryta
+        return self.warstwaUkryta
 
     def getNeuronyWyjsciowe(self):
-        return self.__warstwaWyjsciowa
+        return self.warstwaWyjsciowa
 
     def procesUczenia(self, ileRazy, przypadkiUczenia):
         przypadkiUczeniaWorking = copy.deepcopy(przypadkiUczenia)
@@ -46,11 +47,11 @@ class SiecNeuronowa:
         ####################################
 
         # wartosci obliczen neuronow ukrytych 1 neuron, 1 wyjscie
-        wartosciUkryte = [self.sigmoid(x.sumuj(przypadekUczenia[0])) for x in self.__warstwaUkryta]
+        wartosciUkryte = [self.sigmoid(x.sumuj(przypadekUczenia[0])) for x in self.warstwaUkryta]
         # print(wartosciUkryte)
 
         # wartosci obliczen neuronow wyjsciowych 1 neuron, 1 wyjscie
-        wartosciWyjsciowe = [self.sigmoid(x.sumuj(wartosciUkryte)) for x in self.__warstwaWyjsciowa]
+        wartosciWyjsciowe = [self.sigmoid(x.sumuj(wartosciUkryte)) for x in self.warstwaWyjsciowa]
         # print(wartosciWyjsciowe)
 
         #####################################
@@ -72,9 +73,9 @@ class SiecNeuronowa:
 
 
         # aktualizacja wag neuronow ukrytych
-        for i in range(len(self.__warstwaUkryta)):
+        for i in range(len(self.warstwaUkryta)):
             for j in range(len(przypadekUczenia[0])):
-                waga = self.__warstwaUkryta[i].getWaga(j)
+                waga = self.warstwaUkryta[i].getWaga(j)
                 x = przypadekUczenia[0][j]
                 d = bledyUkryte[i]
                 a = wartosciUkryte[i]
@@ -83,17 +84,24 @@ class SiecNeuronowa:
                 # dd/dy = 1
                 # dy/da = sigmoid(a) * (1 - sigmoid(a))
                 pochodna = (self.sigmoid(a) * (1 - self.sigmoid(a))) * pochodna
+
+                # jezeli uzyto bias tez zaktualizuj go
+                if(self.__bias):
+                    # da/db = 1
+                    bias = self.warstwaUkryta[i].getBias()
+                    nowy_bias = bias - (self.__alfa * pochodna)
+                    self.warstwaUkryta[i].setBiasWaga(nowy_bias)
                 # da/dw = x
                 pochodna = pochodna * x
                 # pochodna = dc/dw
                 nowa_waga = waga - (self.__alfa * pochodna)
-                self.__warstwaUkryta[i].setWaga(j, nowa_waga)
+                self.warstwaUkryta[i].setWaga(j, nowa_waga)
 
 
         # aktualizacja wag neuronow wyjsciowych
-        for i in range(len(self.__warstwaWyjsciowa)):
-            for j in range(len(self.__warstwaUkryta)):
-                waga = self.__warstwaWyjsciowa[i].getWaga(j)
+        for i in range(len(self.warstwaWyjsciowa)):
+            for j in range(len(self.warstwaUkryta)):
+                waga = self.warstwaWyjsciowa[i].getWaga(j)
                 x = wartosciUkryte[j]
                 d = bledyWyjsciowe[i]
                 a = wartosciWyjsciowe[i]
@@ -102,11 +110,19 @@ class SiecNeuronowa:
                 # pochodna dd/dy = 1
                 # pochodna dy/da = sigmoid(a) * (1 - sigmoid(a))
                 pochodna = (self.sigmoid(a) * (1 - self.sigmoid(a))) * pochodna
+
+                # jezeli uzyto bias tez zaktualizuj go
+                if(self.__bias):
+                    # da/db = 1
+                    bias = self.warstwaWyjsciowa[i].getBias()
+                    nowy_bias = bias - (self.__alfa * pochodna)
+                    self.warstwaWyjsciowa[i].setBiasWaga(nowy_bias)
+
                 # pochodna da/dw = x
                 pochodna = pochodna * x
                 # pochodna = dc/dw
                 nowa_waga = waga - (self.__alfa * pochodna)
-                self.__warstwaWyjsciowa[i].setWaga(j, nowa_waga)
+                self.warstwaWyjsciowa[i].setWaga(j, nowa_waga)
 
 
 
@@ -114,20 +130,20 @@ class SiecNeuronowa:
         return [wyjscieObliczone[i] - wyjscieZnane[i] for i in range(len(wyjscieObliczone))]
 
     def obliczajBledyUkrytejWarstwy(self, bledyWarstwyOstatniej):
-        bledyWarstwyUkrytej = [0] * len(self.__warstwaUkryta) # tyle bledow ile neuronow ukrytych
+        bledyWarstwyUkrytej = [0] * len(self.warstwaUkryta) # tyle bledow ile neuronow ukrytych
 
-        for i in range(len(self.__warstwaUkryta)):  # dla kazdego neuronu ukrytego
+        for i in range(len(self.warstwaUkryta)):  # dla kazdego neuronu ukrytego
             for j in range(len(bledyWarstwyOstatniej)):  # zrob cos z bledem warstwy ostatniej
-                bledyWarstwyUkrytej[i] += bledyWarstwyOstatniej[j] * self.__warstwaWyjsciowa[j].getWaga(i)
+                bledyWarstwyUkrytej[i] += bledyWarstwyOstatniej[j] * self.warstwaWyjsciowa[j].getWaga(i)
 
         return bledyWarstwyUkrytej
 
     def test(self, wejscie):
         # wartosci obliczen neuronow ukrytych 1 neuron, 1 wyjscie
-        wartosciUkryte = [self.sigmoid(x.sumuj(wejscie)) for x in self.__warstwaUkryta]
+        wartosciUkryte = [self.sigmoid(x.sumuj(wejscie)) for x in self.warstwaUkryta]
         # print(wartosciUkryte)
         # wartosci obliczen neuronow wyjsciowych 1 neuron, 1 wyjscie
-        wartosciWyjsciowe = [self.sigmoid(x.sumuj(wartosciUkryte)) for x in self.__warstwaWyjsciowa]
+        wartosciWyjsciowe = [self.sigmoid(x.sumuj(wartosciUkryte)) for x in self.warstwaWyjsciowa]
         return wartosciWyjsciowe
 
     # Funkcja aktywacyjna - funkcja Sigmoid
