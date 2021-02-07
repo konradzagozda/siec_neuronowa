@@ -1,4 +1,5 @@
 import copy
+import math
 import random
 
 import numpy as np
@@ -60,12 +61,14 @@ class SiecNeuronowa:
 
         # bledy
         bledyWyjsciowe = self.obliczajBledyOstatniejWarstwy(wartosciWyjsciowe, przypadekUczenia[1])
-        # print(bledyWyjsciowe)
-
-        # sumaBledow = self.funkcjaKosztu(bledyWyjsciowe)
+        # print("bledy na wyjsciu: ", [round(x,3) for x in bledyWyjsciowe])
+        koszt_wyjscia = self.funkcjaKosztu(bledyWyjsciowe)
+        print("koszt wyjscia: ", koszt_wyjscia)
 
         bledyUkryte = self.obliczajBledyUkrytejWarstwy(bledyWyjsciowe)
-        # print(bledyUkryte)
+        # print("bledy ukryte: ", [round(x,4) for x in bledyUkryte])
+        koszt_ukryty = self.funkcjaKosztu(bledyUkryte)
+        # print("koszt ukryty: ", koszt_ukryty)
 
 
         # aktualizacja wag neuronow ukrytych
@@ -74,7 +77,7 @@ class SiecNeuronowa:
                 waga = self.__warstwaUkryta[i].getWaga(j)
                 # dw = x * dz
                 # dz = a - y
-                nowa_waga = waga + (self.__alfa * (przypadekUczenia[0][j] * bledyUkryte[i]))
+                nowa_waga = waga - (self.__alfa * (przypadekUczenia[0][j] * bledyUkryte[i]))
                 self.__warstwaUkryta[i].setWaga(j, nowa_waga)
 
 
@@ -84,13 +87,13 @@ class SiecNeuronowa:
                 waga = self.__warstwaWyjsciowa[i].getWaga(j)
                 # dw = x * dz
                 # dz = a - y
-                nowa_waga = waga + (self.__alfa * (wartosciUkryte[j] * bledyWyjsciowe[i]))
+                nowa_waga = waga - (self.__alfa * (wartosciUkryte[j] * bledyWyjsciowe[i]))
                 self.__warstwaWyjsciowa[i].setWaga(j, nowa_waga)
 
 
 
     def obliczajBledyOstatniejWarstwy(self, wyjscieObliczone, wyjscieZnane):
-        return [wyjscieZnane[i] - wyjscieObliczone[i] for i in range(len(wyjscieObliczone))]
+        return [wyjscieObliczone[i] - wyjscieZnane[i] for i in range(len(wyjscieObliczone))]
 
     def obliczajBledyUkrytejWarstwy(self, bledyWarstwyOstatniej):
         bledyWarstwyUkrytej = [0] * len(self.__warstwaUkryta)
